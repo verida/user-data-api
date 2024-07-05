@@ -1,13 +1,12 @@
 import { AutoAccount } from '@verida/account-node';
 import { Client } from '@verida/client-ts';
-import { AccountNodeDIDClientConfig, EnvironmentType, IContext, Network } from '@verida/types';
+import { AccountNodeDIDClientConfig, EnvironmentType, IContext } from '@verida/types';
 import { Request, Response } from 'express'
 
 const DID_CLIENT_CONFIG: AccountNodeDIDClientConfig = {
     callType: 'web3',
-    environment: EnvironmentType.MAINNET,
     web3Config: {
-        privateKey: '0000000000000000000000000000000000000000000000000000000000000000'
+        privateKey: 'abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef0d3babcdef'
     }
 
 }
