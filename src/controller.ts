@@ -5,7 +5,7 @@ import { Request, Response } from 'express'
 
 const DID_CLIENT_CONFIG: AccountNodeDIDClientConfig = {
     callType: 'web3',
-    environment: EnvironmentType.MAINNET
+    environment: EnvironmentType.MAINNET,
     web3Config: {
         privateKey: '0000000000000000000000000000000000000000000000000000000000000000'
     }
@@ -44,14 +44,14 @@ export default class Controller {
         });
     }
 
-    public static read(req: Request, res: Response, next: any) {
+    public static async read(req: Request, res: Response, next: any) {
         const query = req.query
         const seedPhrase = query.seed.toString()
 
         const { context } = await Controller.getNetwork(seedPhrase)
 
         const db = await context.openDatabase('test_db')
-        const results = await db.getMany())
+        const results = await db.getMany()
 
         await context.close()
 
