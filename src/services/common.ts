@@ -1,4 +1,4 @@
-import { IContext, Network } from "@verida/types";
+import { AccountNodeDIDClientConfig, IContext, Network } from "@verida/types";
 import { Client } from "@verida/client-ts"
 import { AutoAccount } from "@verida/account-node"
 import { Request } from "express";
@@ -11,12 +11,18 @@ export interface NetworkConnection {
 
 // @todo: env variables
 const VAULT_CONTEXT_NAME = 'Verida: Vault'
-const VERIDA_ENVIRONMENT = Network.BANKSIA
+const VERIDA_ENVIRONMENT = Network.MYRTLE
+const DID_CLIENT_CONFIG: AccountNodeDIDClientConfig = {
+    callType: "web3",
+    web3Config: {
+        privateKey: process.env.BLOCKCHAIN_PRIVATE_KEY
+    }
+}
 
 export default class Common {
 
     // key = did
-    protected static networkCache: Record<string, NetworkConnection>
+    protected static networkCache: Record<string, NetworkConnection> = {}
 
     public static async getNetworkFromRequest(req: Request): Promise<NetworkConnection> {
         const headers = req.headers
@@ -24,6 +30,20 @@ export default class Common {
         const contextName = headers["context-name"] ? headers["context-name"].toString() : VAULT_CONTEXT_NAME
 
         return Common.getNetwork(key, contextName)
+    }
+
+    public static buildPermissions(req: Request) {
+        const permissionsHeader = req.headers['permissions'] ? req.headers['permissions'].toString().toLowerCase() : 'write=owner,read=owner'
+        const permissions: Record<string,string> = {}
+        const permissionEntries = permissionsHeader.split(',')
+        permissionEntries.forEach(item => {
+            const splitResults = item.split('=')
+            const permission = splitResults[0]
+            const userType = splitResults[1]
+            permissions[permission] = userType
+        })
+
+        return permissions
     }
 
     private static async getNetwork(signature: string, contextName: string): Promise<{
@@ -41,7 +61,7 @@ export default class Common {
         })
         const did = (await account.did()).toLowerCase()
         
-        if (Common.networkCache[did]) {
+        if (this.networkCache[did]) {
             console.log(`Loaded network from cache! (${did})`)
             return Common.networkCache[did]
         }
@@ -54,7 +74,7 @@ export default class Common {
         const context = await client.openContext(contextName)
 
         // @todo: Manage cache size
-        Common.networkCache[did] = {
+        this.networkCache[did] = {
             client,
             context,
             account

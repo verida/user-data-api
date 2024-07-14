@@ -10,13 +10,19 @@ export class DsController {
     public async get(req: Request, res: Response) {
         const { context } = await Common.getNetworkFromRequest(req)
         const schemaName = req.params[0]
-        const ds = await context.openDatastore(schemaName)
+        const permissions = Common.buildPermissions(req)
         
         try {
+            const ds = await context.openDatastore(schemaName)
             const results = await (await ds).getMany()
             res.json(results)
         } catch (error) {
-            res.status(500).send(error.message);
+            let message = error.message
+            if (error.message.match('invalid encoding')) {
+                message = 'Invalid encoding (check permissions header)'
+            }
+
+            res.status(500).send(message);
         }
     }
 

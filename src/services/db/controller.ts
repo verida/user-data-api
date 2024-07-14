@@ -10,13 +10,24 @@ export class DbController {
     public async get(req: Request, res: Response) {
         const { context } = await Common.getNetworkFromRequest(req)
         const dbName = req.params[0]
-        const db = await context.openDatabase(dbName)
+        const permissions = Common.buildPermissions(req)
+        
+        console.log(permissions)
         
         try {
+            const db = await context.openDatabase(dbName, {
+                // @ts-ignore
+                permissions
+            })
             const results = await (await db).getMany()
             res.json(results)
         } catch (error) {
-            res.status(500).send(error.message);
+            let message = error.message
+            if (error.message.match('invalid encoding')) {
+                message = 'Invalid encoding (check permissions header)'
+            }
+
+            res.status(500).send(message);
         }
     }
 
