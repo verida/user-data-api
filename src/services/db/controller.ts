@@ -8,13 +8,11 @@ import { IContext, IDatabase, IDatastore } from "@verida/types";
 export class DbController {
     
     public async get(req: Request, res: Response) {
-        const { context } = await Common.getNetworkFromRequest(req)
-        const dbName = req.params[0]
-        const permissions = Common.buildPermissions(req)
-        
-        console.log(permissions)
-        
         try {
+            const { context } = await Common.getNetworkFromRequest(req)
+            const dbName = req.params[0]
+            const permissions = Common.buildPermissions(req)
+        
             const db = await context.openDatabase(dbName, {
                 // @ts-ignore
                 permissions
@@ -32,12 +30,19 @@ export class DbController {
     }
 
     public async getById(req: Request, res: Response) {
-        const { context } = await Common.getNetworkFromRequest(req)
-        const dbName = req.params[0]
-        const rowId = req.params[1]
-        const db = await context.openDatabase(dbName)
-        
         try {
+            const { context } = await Common.getNetworkFromRequest(req)
+            const dbName = req.params[0]
+            const rowId = req.params[1]
+            const permissions = Common.buildPermissions(req)
+
+            console.log(rowId)
+            console.log(req)
+
+            const db = await context.openDatabase(dbName, {
+                // @ts-ignore
+                permissions
+            })
             const results = await (await db).get(rowId)
             res.json(results)
         } catch (error) {
@@ -46,11 +51,16 @@ export class DbController {
     }
 
     public async query(req: Request, res: Response) {
-        const { context } = await Common.getNetworkFromRequest(req)
-        const dbName = req.params[0]
-        const db = await context.openDatabase(dbName)
-        
         try {
+            const { context } = await Common.getNetworkFromRequest(req)
+            const dbName = req.params[0]
+
+            const permissions = Common.buildPermissions(req)
+            const db = await context.openDatabase(dbName, {
+                // @ts-ignore
+                permissions
+            })
+
             const selector = req.body.selector
             const options = req.body.options || {}
             const results = await (await db).getMany({ selector, ...options })

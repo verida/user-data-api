@@ -8,12 +8,15 @@ import { IContext, IDatabase, IDatastore } from "@verida/types";
 export class DsController {
     
     public async get(req: Request, res: Response) {
-        const { context } = await Common.getNetworkFromRequest(req)
-        const schemaName = req.params[0]
-        const permissions = Common.buildPermissions(req)
-        
         try {
-            const ds = await context.openDatastore(schemaName)
+            const { context } = await Common.getNetworkFromRequest(req)
+            const schemaName = req.params[0]
+            const permissions = Common.buildPermissions(req)
+        
+            const ds = await context.openDatastore(schemaName, {
+                // @ts-ignore
+                permissions
+            })
             const results = await (await ds).getMany()
             res.json(results)
         } catch (error) {
@@ -27,12 +30,16 @@ export class DsController {
     }
 
     public async getById(req: Request, res: Response) {
-        const { context } = await Common.getNetworkFromRequest(req)
-        const schemaName = req.params[0]
-        const rowId = req.params[1]
-        const ds = await context.openDatastore(schemaName)
-        
         try {
+            const { context } = await Common.getNetworkFromRequest(req)
+            const permissions = Common.buildPermissions(req)
+            const schemaName = req.params[0]
+            const rowId = req.params[1]
+            const ds = await context.openDatastore(schemaName, {
+                // @ts-ignore
+                permissions
+            })
+        
             const results = await (await ds).get(rowId, {})
             res.json(results)
         } catch (error) {
@@ -41,11 +48,15 @@ export class DsController {
     }
 
     public async query(req: Request, res: Response) {
-        const { context } = await Common.getNetworkFromRequest(req)
-        const schemaName = req.params[0]
-        const ds = await context.openDatastore(schemaName)
-        
         try {
+            const { context } = await Common.getNetworkFromRequest(req)
+            const permissions = Common.buildPermissions(req)
+            const schemaName = req.params[0]
+            const ds = await context.openDatastore(schemaName, {
+                // @ts-ignore
+                permissions
+            })
+        
             const selector = req.body.selector
             const options = req.body.options || {}
             const results = await (await ds).getMany({ selector, ...options })
