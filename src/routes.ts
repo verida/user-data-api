@@ -1,10 +1,10 @@
-import express from 'express'
-import Controller from './controller'
+import { Router } from 'express'
+import DbRoutes from './services/db/routes'
+import DsRoutes from './services/ds/routes'
 
-const router = express.Router()
+const router = Router()
 
-router.get('/save', Controller.save)
-router.get('/read', Controller.read)
-
+router.use('/db', DbRoutes)
+router.use('/ds', DsRoutes)
 
 export default router
