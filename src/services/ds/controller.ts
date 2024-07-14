@@ -57,9 +57,9 @@ export class DsController {
                 permissions
             })
         
-            const selector = req.body.selector
+            const selector = req.body.query
             const options = req.body.options || {}
-            const results = await (await ds).getMany({ selector, ...options })
+            const results = await (await ds).getMany(selector, options)
             res.json(results)
         } catch (error) {
             res.status(500).send(error.message);

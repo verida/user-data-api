@@ -61,9 +61,9 @@ export class DbController {
                 permissions
             })
 
-            const selector = req.body.selector
+            const selector = req.body.query
             const options = req.body.options || {}
-            const results = await (await db).getMany({ selector, ...options })
+            const results = await (await db).getMany(selector, options)
             res.json(results)
         } catch (error) {
             res.status(500).send(error.message);
