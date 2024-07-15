@@ -46,6 +46,11 @@ export default class Common {
         return permissions
     }
 
+    public static getSchemaFromParams(base64Schema: string) {
+        const buffer = Buffer.from(base64Schema, 'base64')
+        return buffer.toString('utf-8')
+    }
+
     private static async getNetwork(signature: string, contextName: string): Promise<{
         client: Client,
         context: IContext,

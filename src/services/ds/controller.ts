@@ -10,7 +10,7 @@ export class DsController {
     public async get(req: Request, res: Response) {
         try {
             const { context } = await Common.getNetworkFromRequest(req)
-            const schemaName = req.params[0]
+            const schemaName = Common.getSchemaFromParams(req.params[0])
             const permissions = Common.buildPermissions(req)
         
             const ds = await context.openDatastore(schemaName, {
@@ -33,7 +33,7 @@ export class DsController {
         try {
             const { context } = await Common.getNetworkFromRequest(req)
             const permissions = Common.buildPermissions(req)
-            const schemaName = req.params[0]
+            const schemaName = Common.getSchemaFromParams(req.params[0])
             const rowId = req.params[1]
             const ds = await context.openDatastore(schemaName, {
                 // @ts-ignore
@@ -51,7 +51,9 @@ export class DsController {
         try {
             const { context } = await Common.getNetworkFromRequest(req)
             const permissions = Common.buildPermissions(req)
-            const schemaName = req.params[0]
+            const schemaName = Common.getSchemaFromParams(req.params[0])
+
+            console.log(schemaName, permissions)
             const ds = await context.openDatastore(schemaName, {
                 // @ts-ignore
                 permissions
