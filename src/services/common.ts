@@ -11,7 +11,7 @@ export interface NetworkConnection {
 
 // @todo: env variables
 const VAULT_CONTEXT_NAME = 'Verida: Vault'
-const VERIDA_ENVIRONMENT = Network.MYRTLE
+const VERIDA_ENVIRONMENT = <Network> process.env.VERIDA_NETWORK
 const DID_CLIENT_CONFIG: AccountNodeDIDClientConfig = {
     callType: "web3",
     web3Config: {
