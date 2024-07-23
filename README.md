@@ -4,6 +4,13 @@ A simple PoC of a user data API that exposes endpoints to easily access decrypte
 
 This server is designed to be run locally or within a secure enclave to ensure privacy of user data and encryption keys.
 
+## Setup
+
+```
+yarn
+yarn run dev
+```
+
 ## Endpoint Headers
 
 All endpoints expect a `key` header to be passed that provides the Verida account `privateKey` (hex) or `seedPhrase`.
