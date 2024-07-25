@@ -21,11 +21,9 @@ export class DsController {
 
             const cacheKey = CryptoJS.MD5(`${schemaName}:${indexFields.join(',')}:${storeFields.join(',')}`).toString();
 
-            let docs: any = {}
-            if (indexCache[cacheKey]) {
-                console.log('Loaded data from cache')
-                docs = indexCache[cacheKey]
-            } else {
+            console.log('cacheKey', cacheKey)
+
+            if (!indexCache[cacheKey]) {
                 const { context } = await Common.getNetworkFromRequest(req)
                 const permissions = Common.buildPermissions(req)
                 
@@ -36,6 +34,7 @@ export class DsController {
                     permissions
                 })
 
+                console.log('Fetching data')
                 const database = await datastore.getDb()
                 const db = await database.getDb()
                 const result = await db.allDocs({
@@ -44,12 +43,23 @@ export class DsController {
                     limit: 10
                 });
                 
-                docs = result.rows.map((item: any) => {
-                    // @todo: handle array fields
-                    
-                    return item
-                })
+                const docs: any = []
+                for (const i in result.rows) {
+                    const row = result.rows[i].doc
+                    // Ignore PouchDB design rows
+                    if (row._id.match('_design')) {
+                        continue
+                    }
 
+                    row.id = row._id
+                    delete row['_id']
+
+                    // @todo: handle array fields
+
+                    docs.push(row)
+                }
+
+                console.log('Creating index')
                 const miniSearch = new MiniSearch({
                     fields: indexFields, // fields to index for full-text search
                     storeFields: storeFields.length ? storeFields : Object.keys(docs[0]) // fields to return with search results, @todo: use schema
@@ -61,6 +71,7 @@ export class DsController {
                 indexCache[cacheKey] = miniSearch
             }
 
+            console.log("Searching...")
             const results = indexCache[cacheKey].search(query)
 
             return res.json({
