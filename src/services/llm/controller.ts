@@ -9,8 +9,9 @@ const luceneUri = 'http://127.0.0.1:5022/search/ds/aHR0cHM6Ly9jb21tb24uc2NoZW1hc
 const quickSearchUri = 'http://127.0.0.1:5022/quicksearch/ds/aHR0cHM6Ly9jb21tb24uc2NoZW1hcy52ZXJpZGEuaW8vc29jaWFsL2VtYWlsL3YwLjEuMC9zY2hlbWEuanNvbg==='
 const miniSearchUrl = 'http://127.0.0.1:5022/minisearch/ds/aHR0cHM6Ly9jb21tb24uc2NoZW1hcy52ZXJpZGEuaW8vc29jaWFsL2VtYWlsL3YwLjEuMC9zY2hlbWEuanNvbg==='
 const MAX_EMAIL_LENGTH = 1000
+const MAX_ATTACHMENT_LENGTH = 1000
 const SNIPPET_EMAIL_LENGTH = 500
-const MAX_CONTEXT_LENGTH = 4900
+const MAX_CONTEXT_LENGTH = 20000
 
 const llm = new LLMServices()
 
@@ -120,6 +121,7 @@ export class LLMController {
                         fromEmail: row.fromEmail,
                         subject: row.name,
                         sentAt: row.sentAt,
+                        attachments: row.attachments,
                         body: stripHtml(row.messageText).result.substring(0, MAX_EMAIL_LENGTH),
                         _score: emailRows[row.id]._score * 2 + row.score
                     }
@@ -190,7 +192,14 @@ export class LLMController {
                 //     continue
                 // }
                 // console.log('Match: ', email.fromName, email.subject)
-                const extraContext = `${email.fromName} <${email.fromEmail}> (${email.name})\n${email.body.substring(0, MAX_EMAIL_LENGTH)}\n\n`
+                let body = email.body.substring(0, MAX_EMAIL_LENGTH)
+                if (email.attachments) {
+                    for (const attachment of email.attachments) {
+                        body += attachment.textContent.substring(0, MAX_ATTACHMENT_LENGTH)
+                    }
+                }
+
+                const extraContext = `${email.fromName} <${email.fromEmail}> (${email.name})\n${body}\n\n`
                 if ((extraContext.length + contextString.length + finalPrompt.length) > MAX_CONTEXT_LENGTH) {
                     break
                 }
