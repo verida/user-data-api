@@ -10,6 +10,7 @@ const quickSearchUri = 'http://127.0.0.1:5022/quicksearch/ds/aHR0cHM6Ly9jb21tb24
 const miniSearchUrl = 'http://127.0.0.1:5022/minisearch/ds/aHR0cHM6Ly9jb21tb24uc2NoZW1hcy52ZXJpZGEuaW8vc29jaWFsL2VtYWlsL3YwLjEuMC9zY2hlbWEuanNvbg==='
 const MAX_EMAIL_LENGTH = 1000
 const SNIPPET_EMAIL_LENGTH = 500
+const MAX_CONTEXT_LENGTH = 4900
 
 const llm = new LLMServices()
 
@@ -83,9 +84,10 @@ export class LLMController {
             // }
 
             const responses = []
+            const searchFields = `name,fromName,fromEmail,messageText,attachments_0.textContent,attachments_1.textContent,attachments_2.textContent`
             try {
                 // for (let searchAttribute of keywords.concat(entities)) {
-                    responses.push(await Axios.get(`${miniSearchUrl}?q=${keywords.concat(entities).join(' ')}`, {
+                    responses.push(await Axios.get(`${miniSearchUrl}?q=${keywords.concat(entities).join(' ')}&fields=${searchFields}`, {
                         headers: {
                             key
                         }
@@ -175,6 +177,7 @@ export class LLMController {
             // }
 
             // const emailIds = JSON.parse(stagingResponse)
+            let finalPrompt = `Answer this prompt:\n${prompt}\nHere are some recent emails that may help you provide a relevant answer.\n`
             let contextString = ''
             for (const email of emails) {
                 // if (typeof(emailId) == 'object') {
@@ -187,10 +190,15 @@ export class LLMController {
                 //     continue
                 // }
                 // console.log('Match: ', email.fromName, email.subject)
-                contextString += `${email.fromName} <${email.fromEmail}> (${email.name})\n${email.body.substring(0, MAX_EMAIL_LENGTH)}\n\n`
+                const extraContext = `${email.fromName} <${email.fromEmail}> (${email.name})\n${email.body.substring(0, MAX_EMAIL_LENGTH)}\n\n`
+                if ((extraContext.length + contextString.length + finalPrompt.length) > MAX_CONTEXT_LENGTH) {
+                    break
+                }
+                
+                contextString += extraContext
             }
 
-            const finalPrompt = `Answer this prompt:\n${prompt}\nHere are some recent emails that may help you provide a relevant answer.\n${contextString}`
+            finalPrompt += contextString
             //console.log('Running final prompt', finalPrompt.length)
             const finalResponse = await llm.groq(finalPrompt)
 
