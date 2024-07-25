@@ -13,18 +13,20 @@ export class DsController {
 
     public async searchDs(req: Request, res: Response) {
         try {
+            const { context, account } = await Common.getNetworkFromRequest(req)
+            const did = await account.did()
+
             const schemaName = Common.getSchemaFromParams(req.params[0])
             const query = req.query.q.toString()
             const indexFields = req.query.fields ? req.query.fields.toString().split(',') : []
-            const storeFields = req.query.store ? req.query.store.toString().split(',') : []
+            let storeFields = req.query.store ? req.query.store.toString().split(',') : []
             console.log(`Searching for ${query} in ${schemaName} with index ${indexFields}`)
 
-            const cacheKey = CryptoJS.MD5(`${schemaName}:${indexFields.join(',')}:${storeFields.join(',')}`).toString();
+            const cacheKey = CryptoJS.MD5(`${did}:{schemaName}:${indexFields.join(',')}:${storeFields.join(',')}`).toString();
 
             console.log('cacheKey', cacheKey)
 
             if (!indexCache[cacheKey]) {
-                const { context } = await Common.getNetworkFromRequest(req)
                 const permissions = Common.buildPermissions(req)
                 
 
@@ -40,9 +42,27 @@ export class DsController {
                 const result = await db.allDocs({
                     include_docs: true,
                     attachments: false,
-                    limit: 10
+                    limit: 500
                 });
                 
+                // Build a list of array properties to index separately
+                const schema = datastore.getSchema();
+                const schemaSpec = await schema.getSpecification();
+
+                const arrayProperties = []
+                for (const propertyKey of Object.keys(schemaSpec.properties)) {
+                    const property = schemaSpec.properties[propertyKey]
+
+                    if (property.type == 'array') {
+                        arrayProperties.push(propertyKey)
+                    }
+                }
+
+                // If no store fields specified, store everything
+                if (storeFields.length === 0) {
+                    storeFields = Object.keys(schemaSpec.properties)
+                }
+
                 const docs: any = []
                 for (const i in result.rows) {
                     const row = result.rows[i].doc
@@ -54,15 +74,42 @@ export class DsController {
                     row.id = row._id
                     delete row['_id']
 
-                    // @todo: handle array fields
+                    // Flatten array fields for indexing
+                    for (const arrayProperty of arrayProperties) {
+                        if (row[arrayProperty] && row[arrayProperty].length) {
+                            let i = 0
+                            for (const arrayItem of row[arrayProperty]) {
+                                if (!arrayItem.filename.match('pdf')) {
+                                    continue
+                                }
+
+                                const arrayItemProperty = `${arrayProperty}_${i}`
+                                row[arrayItemProperty] = arrayItem
+
+                                // Make sure this field is stored
+                                if (storeFields.indexOf(arrayItemProperty) === -1) {
+                                    storeFields.push(arrayItemProperty)
+                                }
+
+                                // @todo: Make sure the original field isn't stored (`arrayProperty`)
+
+                                console.log(arrayItem.filename, arrayItem.textContent.substring(0,100))
+                                i++
+                            }
+                        }
+                    }
 
                     docs.push(row)
                 }
 
-                console.log('Creating index')
+                console.log('Creating index', indexFields, storeFields)
                 const miniSearch = new MiniSearch({
                     fields: indexFields, // fields to index for full-text search
-                    storeFields: storeFields.length ? storeFields : Object.keys(docs[0]) // fields to return with search results, @todo: use schema
+                    storeFields,
+                    // Add support for nested fields (`ie: attachments_0.textContent)
+                    extractField: (document, fieldName) => {
+                        return fieldName.split('.').reduce((doc, key) => doc && doc[key], document)
+                      }
                 })
 
                 // Index all documents
